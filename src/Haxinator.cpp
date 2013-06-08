@@ -22,7 +22,7 @@
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/DebugLoc.h"
-#include "llvm/Support/InstVisitor.h"
+#include "llvm/Support/InstIterator.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/system_error.h"
@@ -233,10 +233,6 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 			writeValue(val);
 		}
 		*output << ";";
-	} else if(const DbgDeclareInst *d = dyn_cast<DbgDeclareInst>(inst)) {
-		*output << "/* dbg ";
-		writeValue(d -> getVariable());
-		*output << "*/";
 	} else if(const CastInst *c = dyn_cast<CastInst>(inst)) {
 		*output << "cast (";
 		writeValue(c -> getOperand(0));
@@ -337,7 +333,7 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 		const Value* called = c -> getCalledValue();
 		if(called == NULL)
 			called = c -> getCalledFunction();
-		if(called == NULL || called == 0) {
+		if(called == NULL) {
 			*output << "/* Unrecognised function: " << c << " */";
 		} else
 			writeValue(called);
@@ -612,28 +608,23 @@ void HaxeWriter::writeType(const Type *t) {
 		}
 	} else if(const PointerType *p = dyn_cast<const PointerType>(t))
 		writeType(p -> getElementType());
-	else if(const CompositeType *c = dyn_cast<const CompositeType>(t)) {
-		*output << "Composite??";
-	} else {
+	else
 		*output << "Dynamic /* Unknown type " << t << "*/";
-	}
 }
 void HaxeWriter::writeConstant(const Constant *it) {
 	if (const ConstantInt *CI = dyn_cast<const ConstantInt>(it))
 		*output << CI -> getValue();
 	else if (const ConstantFP *CF = dyn_cast<const ConstantFP>(it))
 		*output << CF -> getValueAPF().convertToDouble();
-	else if(const ConstantAggregateZero *CAZ = dyn_cast<const ConstantAggregateZero>(it))
+	else if(isa<const ConstantAggregateZero>(it))
 		*output << "0";
 	else if(const BlockAddress *BA = dyn_cast<const BlockAddress>(it))
 		*output << "\"" << BA -> getFunction() -> getName() << "\"";
-	else if(const UndefValue *UV = dyn_cast<const UndefValue>(it))
+	else if(isa<const UndefValue>(it))
 		*output << "null";
-	else if(const ConstantStruct *CS = dyn_cast<const ConstantStruct>(it))
-		*output << "Struct";
-	else if(const ConstantExpr *ex = dyn_cast <const ConstantExpr>(it)) {
-		//writeInst(CE -> getAsInstruction());
-		*output << "EXPRESSION";
+	else if(const ConstantExpr *ex = dyn_cast<const ConstantExpr>(it)) {
+		ConstantExpr *exp = (ConstantExpr*) ex;
+		writeInst(exp -> getAsInstruction());
 	} else if(isa<const ConstantPointerNull>(it))
 		*output << "null";
 	else if(const BlockAddress *bl = dyn_cast<const BlockAddress>(it)) {
@@ -652,11 +643,15 @@ void HaxeWriter::writeConstant(const Constant *it) {
 			*output << encodeString(cds -> getAsCString().str());
 		else {
 			*output << "[";
-			Constant* c;
 			const unsigned int len = cds -> getNumElements();
-			if(len <= 50)
-				for(unsigned i=0;i < len && (c=cds->getElementAsConstant(i))!=0;i++)
-					*output << " ";
+			if(len <= 50) {
+				Constant* c;
+				for(unsigned i=0;i < len && (c=cds->getElementAsConstant(i))!=0;i++) {
+					if(i > 0)
+						*output << ", ";
+					writeConstant(c);
+				}
+			}
 			else
 				cout << len << " is too darn large!";
 			writeType(et);
@@ -691,7 +686,8 @@ void HaxeWriter::writeAll() {
 	*output << "}";
 	newline();
 }
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
+	cout << "Generating..\n";
 	const string sourceFile = argv[argc-2];
 	const string destFile = argv[argc-1];
 	LLVMContext* ctx = new LLVMContext();

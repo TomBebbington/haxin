@@ -12,7 +12,7 @@ int main() {
 			case 2: s = "Hey, look!"; break;
 			default: s = "Heywut!"; break;
 		}
-		std::cout << s;
+		std::cout << s << "\r\n";
 	}
 	return 0;
 }
