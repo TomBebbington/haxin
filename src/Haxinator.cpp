@@ -1,18 +1,18 @@
-#include "llvm/BasicBlock.h"
-#include "llvm/Constants.h"
-#include "llvm/DerivedTypes.h"
-#include "llvm/Function.h"
-#include "llvm/GlobalVariable.h"
-#include "llvm/GlobalAlias.h"
-#include "llvm/IRBuilder.h"
-#include "llvm/InstrTypes.h"
-#include "llvm/Instruction.h"
-#include "llvm/Instructions.h"
-#include "llvm/LLVMContext.h"
-#include "llvm/Metadata.h"
-#include "llvm/Module.h"
-#include "llvm/Type.h"
-#include "llvm/User.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/GlobalVariable.h"
+#include "llvm/IR/GlobalAlias.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/InstrTypes.h"
+#include "llvm/IR/Instruction.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Metadata.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/User.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/ilist_node.h"
 #include "llvm/ADT/OwningPtr.h"
@@ -541,7 +541,7 @@ void HaxeWriter::writeInsts(const BasicBlock* b, bool is_value) {
 }
 void HaxeWriter::writeFunctions() {
 	for(Module::const_iterator it = mod -> begin();it != mod -> end();it++) {
-		*output << "static function " << it -> getName() << "(";
+		*output << "static function " << haxeFilter(it -> getName()) << "(";
 		for(Function::const_arg_iterator ait = it -> arg_begin(); ait != it -> arg_end(); ait++) {
 			if(ait != it -> arg_begin())
 				*output << ", ";
@@ -631,8 +631,9 @@ void HaxeWriter::writeConstant(const Constant *it) {
 		*output << "null";
 	else if(const ConstantStruct *CS = dyn_cast<const ConstantStruct>(it))
 		*output << "Struct";
-	else if(const ConstantExpr *CE = dyn_cast <const ConstantExpr>(it)) {
-		writeInst(CE -> getAsInstruction());
+	else if(const ConstantExpr *ex = dyn_cast <const ConstantExpr>(it)) {
+		//writeInst(CE -> getAsInstruction());
+		*output << "EXPRESSION";
 	} else if(isa<const ConstantPointerNull>(it))
 		*output << "null";
 	else if(const BlockAddress *bl = dyn_cast<const BlockAddress>(it)) {

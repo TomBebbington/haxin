@@ -25,7 +25,7 @@ class TestsHelloBc {
 		cast (c, Int)
 		{
 			?  %i.016 = phi i32 [ 0, %0 ], [ %52, %_ZNSsD1Ev.exit ]?
-			[0, 0, 0] = expr:bitcast
+			[0, 0, 0] = EXPRESSION
 			switch() {
 				case 0:
 					()
@@ -42,7 +42,7 @@ class TestsHelloBc {
 			
 			}
 		?  %i.016 = phi i32 [ 0, %0 ], [ %52, %_ZNSsD1Ev.exit ]?
-		[0, 0, 0] = expr:bitcast
+		[0, 0, 0] = EXPRESSION
 		switch() {
 			case 0:
 				()
@@ -59,17 +59,17 @@ class TestsHelloBc {
 		
 		()
 		?  %11 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
-          cleanup?
+          cleanup?
 		[0, 0]
 		(-1, [0, 0])
 		[0, 0, 0]
 		[0, 0, 0][-24]
 		cast ([0, 0, 0][-24], structStd.Basic_string<char, std.Char_traits<char>, std.Allocator<char> >._Rep)
-		[0, 0, 0][-24] == expr:bitcast
-		if([0, 0, 0][-24] == expr:bitcast)
+		[0, 0, 0][-24] == EXPRESSION
+		if([0, 0, 0][-24] == EXPRESSION)
 		[0, 0, 0][-8]
 		cast ([0, 0, 0][-8], Int)
-		if(expr:icmp)
+		if(EXPRESSION)
 		cast (, Int)
 		(4, )
 		cast ([0, 0, 0][-8], Int) += -1
@@ -88,7 +88,7 @@ class TestsHelloBc {
 		{
 			(-1, [0, 0])
 			throw ?  %11 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
-          cleanup?
+          cleanup?
 			}
 		()
 		()
@@ -102,11 +102,11 @@ class TestsHelloBc {
 		[0, 0, 0]
 		[0, 0, 0][-24]
 		cast ([0, 0, 0][-24], structStd.Basic_string<char, std.Char_traits<char>, std.Allocator<char> >._Rep)
-		[0, 0, 0][-24] == expr:bitcast
-		if([0, 0, 0][-24] == expr:bitcast)
+		[0, 0, 0][-24] == EXPRESSION
+		if([0, 0, 0][-24] == EXPRESSION)
 		[0, 0, 0][-8]
 		cast ([0, 0, 0][-8], Int)
-		if(expr:icmp)
+		if(EXPRESSION)
 		(4, )
 		cast ([0, 0, 0][-8], Int) += -1
 		 = cast ([0, 0, 0][-8], Int) += -1
@@ -129,7 +129,7 @@ class TestsHelloBc {
 		return 0;
 		(-1, [0, 0])
 		throw ?  %11 = landingpad { i8*, i32 } personality i8* bitcast (i32 (...)* @__gxx_personality_v0 to i8*)
-          cleanup?
+          cleanup?
 	}
 	static function __gxx_personality_v0(): Int {
 	}
@@ -143,12 +143,12 @@ class TestsHelloBc {
 	}
 	static function _GLOBAL__I_a(): Void {
 		()
-		(expr:bitcast, expr:getelementptr, )
+		(EXPRESSION, EXPRESSION, )
 		return;
 	}
-	static function llvm.lifetime.start(a0:Int, a1:Int): Void {
+	static function llvm_lifetime_start(a0:Int, a1:Int): Void {
 	}
-	static function llvm.lifetime.end(a0:Int, a1:Int): Void {
+	static function llvm_lifetime_end(a0:Int, a1:Int): Void {
 	}
 	
 }
