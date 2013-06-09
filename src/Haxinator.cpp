@@ -1,3 +1,4 @@
+#include "llvm/IR/Attributes.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -26,6 +27,7 @@
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/system_error.h"
+#include "llvm/Config/config.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iostream>
@@ -61,13 +63,13 @@ string toUpper(string s) {
 }
 
 string haxeFilter(string n, bool camel = false) {
-	const string notAllowed[] = {".", "/", "main", "_"};
-	const int num_notAllowed = 2;
+	const string notAllowed[] = {".", "/", "_", "+", "-"};
+	const int num_notAllowed = 5;
 	for(int i=0;i<num_notAllowed;i++) {
 		const string c = notAllowed[i];
 		int found = (int) n.find(c);
-		int count = 0;
-		while(found != -1 && count++ < 50) {
+		uint count = 0;
+		while(found != -1 && count++ < 500) {
 			if(camel)
 				n.replace(found, c.length()+1, toUpper(n.substr(found+1, 1)));
 			else
@@ -75,30 +77,54 @@ string haxeFilter(string n, bool camel = false) {
 			found = (int) n.find(c);
 		}
 	}
+	if(n == "main")
+		n = "_main";
 	return n;
 }
 string toHaxeName(string n) {
-	if((int) n.find("class.") == 0)
+	if(n.length() >= 6 && n.substr(0, 6) == "class.")
 		n = n.substr(6);
 	n = haxeFilter(n, true);
+	const string slash = "/";
+	const size_t found = n.find_last_of(slash, 0);
+	if(found != 0 && found < n.length() && found != string::npos)
+		n = n.substr(found);
 	const string sep = "::";
+	int last = -1;
 	while(true) {
 		int f = (int) n.find(sep);
 		if(f == -1)
 			break;
-		else
+		else {
 			n = n.replace(f, sep.length()+1, "." + toUpper(n.substr(f + sep.length(), 1)));
+			last = f;
+		}
 	}
+	if(last >= 0 && n.length() > last + 1)
+		n.replace(last, 1, toUpper(n.substr(last, 1)));
 	return n;
 }
 string formatClassName(string n) {
-	n = haxeFilter(n, true);
-	n = toUpper(n.substr(0, 1)) + n.substr(1);
-	return n;
+	return toHaxeName(n);
 }
-
-string encodeString(string s) {
-	return "\"" + s + "\"";
+string replaceAll(string s, const string from, const string to) {
+	size_t off = 0;
+	while(off < s.length() && off != string::npos) {
+		size_t first = s.find_first_of(from, off);
+		if(first == string::npos)
+			break;
+		s.replace(first, from.length(), to);
+		off = first + to.length();
+	}
+	return s;
+}
+const string encodeString(string s) {
+	const string quote = "\"";
+	s = replaceAll(s, "\"", "\\\"");
+	s = replaceAll(s, "\n", "\\n");
+	s = replaceAll(s, "\t", "\\t");
+	s = replaceAll(s, "\r", "\\r");
+	return quote + s + quote;
 }
 
 string getDefaultValue(const Type *t) {
@@ -141,13 +167,15 @@ class HaxeWriter {
 	raw_ostream* output;
 	vector<const Instruction*>* cache;
 	Module* mod;
+	string name;
 	unsigned int tabs;
 	unsigned int allocWidth;
 	std::map <const Instruction*, string> names;
 	public:
-		HaxeWriter(raw_ostream*, Module*);
+		HaxeWriter(raw_ostream*, Module*, string);
 		void newline();
 		void writeAll();
+		void writeMetadata();
 		void writeFunctions();
 		void writeVars(vector<const AllocaInst*>* vars);
 		void writeGlobals();
@@ -156,11 +184,13 @@ class HaxeWriter {
 		void writeType(const Type*);
 		void writeInsts(const BasicBlock*, bool=false);
 		void writeInst(const Instruction*, bool=false);
+		void writeMain();
 		void generateInst();
 };
-HaxeWriter::HaxeWriter(raw_ostream *o, Module* m) {
+HaxeWriter::HaxeWriter(raw_ostream *o, Module* m, string n) {
 	output = o;
 	mod = m;
+	name = n;
 	tabs = 0;
 	allocWidth = 0;
 	cache = new vector<const Instruction*>();
@@ -171,10 +201,15 @@ void HaxeWriter::newline() {
 		*output << "\t";
 	output -> flush();
 }
+int getConstantInt(const ConstantInt* ci) {
+	return ci -> getValue().getLimitedValue();
+}
 void HaxeWriter::writeValue(const Value *v) {
 	if(v -> hasName() && v -> getName().str().length() > 0)
 		haxeFilter(v -> getName().str());
-	else if(const Constant* c = dyn_cast<Constant>(v))
+	else if(const GlobalValue* var = dyn_cast<GlobalValue>(v)) {
+		*output << "value";
+	} else if(const Constant* c = dyn_cast<Constant>(v)) 
 		writeConstant(c);
 	else if(const BasicBlock* b = dyn_cast<BasicBlock>(v)) {
 		*output << "{";
@@ -234,11 +269,8 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 		}
 		*output << ";";
 	} else if(const CastInst *c = dyn_cast<CastInst>(inst)) {
-		*output << "cast (";
+		*output << "cast ";
 		writeValue(c -> getOperand(0));
-		*output << ", ";
-		writeType(c -> getDestTy());
-		*output << ")";
 	} else if(const LoadInst *l = dyn_cast<LoadInst>(inst)) {
 		writeValue(l -> getOperand(0));
 	} else if(const AllocaInst *i = dyn_cast<AllocaInst>(inst)) {
@@ -319,13 +351,25 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 		}
 	} else if(const GetElementPtrInst *e = dyn_cast<GetElementPtrInst>(inst)) {
 		writeValue(e -> getPointerOperand());
-		*output << "[";
+		Type * lastType = e -> getPointerOperand() -> getType();
 		for(GetElementPtrInst::const_op_iterator iit = e -> idx_begin(); iit != e -> idx_end();iit++) {
-			if(iit != e -> idx_begin())
-				*output << ", ";
-			writeValue(*iit);
+			int val = getConstantInt(cast<ConstantInt>(iit -> get()));
+			if(lastType -> isVectorTy() || lastType -> isArrayTy()) {
+				*output << "[" << val << "]";
+				lastType = iit -> get() -> getType();
+			} else {
+				*output << "." << genID(val);
+				//lastType = cast<StructType>(iit -> get() -> getType()) -> getElementType(ind);
+			}
 		}
-		*output << "]";
+	} else if(const LandingPadInst *lp = dyn_cast<LandingPadInst>(inst)) {
+		*output << "try ";
+		writeValue(lp -> getOperand(0));
+		uint clen = lp -> getNumClauses();
+		for(uint i=0;i<clen;i++) {
+			*output << "\nCLAUSE\n";
+			writeValue(lp -> getClause(i));
+		}
 	} else if(const InvokeInst *i = dyn_cast<InvokeInst>(inst)) {
 		writeValue(i -> getCalledValue());
 		*output << "()";
@@ -525,6 +569,20 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 	} else if(const ResumeInst* r = dyn_cast<ResumeInst>(inst)) {
 		*output << "throw ";
 		writeValue(r -> getValue());
+	} else if(const PHINode* n = dyn_cast<PHINode>(inst)) {
+		int len = n -> getNumIncomingValues();
+		for(int i=0;i<len;i++) {
+			if(i > 0)
+				*output << " else ";
+			*output << "if(";
+			writeValue(n -> getIncomingValue(i));
+			*output << ") {";
+			tabs++;
+			writeInsts(n -> getIncomingBlock(i));
+			tabs--;
+			newline();
+			*output << "}";
+		}
 	} else
 		*output << "?" << *inst << "?";
 	cache -> pop_back();
@@ -551,6 +609,10 @@ void HaxeWriter::writeFunctions() {
 		*output << "): ";
 		writeType(it -> getReturnType());
 		*output << " {";
+		if(it -> empty() && !it -> getReturnType() -> isVoidTy()) {
+			//Extern?
+			*output << " // extern";
+		}
 		for(Function::const_iterator bit = it -> begin(); bit != it -> end(); bit++) {
 			tabs++;
 			writeInsts(bit);
@@ -593,10 +655,10 @@ void HaxeWriter::writeType(const Type *t) {
 		*output << "haxe.io.Bytes";
 	else if(t -> isStructTy()) {
 		const StructType* s = cast<StructType>(t);
+		uint numEles = s -> getNumElements();
 		if(s -> hasName())
 			*output << toHaxeName(s -> getName());
 		else {
-			int numEles = s -> getNumElements();
 			*output << "{";
 			for(int i=0; i < numEles;i++) {
 				*output << genID(i) << ": ";
@@ -643,8 +705,8 @@ void HaxeWriter::writeConstant(const Constant *it) {
 			*output << encodeString(cds -> getAsCString().str());
 		else {
 			*output << "[";
-			const unsigned int len = cds -> getNumElements();
-			if(len <= 50) {
+			const unsigned len = cds -> getNumElements();
+			if(len < 100) {
 				Constant* c;
 				for(unsigned i=0;i < len && (c=cds->getElementAsConstant(i))!=0;i++) {
 					if(i > 0)
@@ -652,10 +714,11 @@ void HaxeWriter::writeConstant(const Constant *it) {
 					writeConstant(c);
 				}
 			}
-			else
-				cout << len << " is too darn large!";
-			writeType(et);
-			*output << "]";
+			else {
+				cerr << len << " is too darn large!\n";
+				writeType(et);
+			}
+			*output << "] /*CDS*/";
 		}
 	} else {
 		*output << "Unknown";
@@ -674,20 +737,51 @@ void HaxeWriter::writeGlobals() {
 		newline();
 	}
 }
+void HaxeWriter::writeMetadata() {
+	const string id = mod -> getModuleIdentifier();
+	const string target = mod -> getTargetTriple();
+	if(id.length() > 0) {
+		*output << "@:ident(" << encodeString(id) << ")";
+		newline();
+	}
+	if(target.length() > 0) {
+		*output << "@:target(" << encodeString(target) << ")";
+		newline();
+	}
+}
+void HaxeWriter::writeMain() {
+	*output << "public static function main() {";
+	tabs++;
+	newline();
+	GlobalVariable* val = mod -> getGlobalVariable("llvm.global_ctors");
+	*output << "var inits = ";
+	writeConstant(cast<ConstantDataSequential>(val));
+	*output << ";";
+	newline();
+	*output << "for(i in inits)";
+	tabs++;
+	newline();
+	*output << "null;";
+	tabs--;
+	tabs--;
+	newline();
+	*output << "}";
+	newline();
+}
 void HaxeWriter::writeAll() {
-	string name = formatClassName(mod -> getModuleIdentifier());
+	writeMetadata();
 	*output << "class " << name << " {";
 	tabs++;
 	newline();
 	writeGlobals();
 	writeFunctions();
+	writeMain();
 	tabs--;
 	newline();
 	*output << "}";
 	newline();
 }
 int main(int argc, char** argv) {
-	cout << "Generating..\n";
 	const string sourceFile = argv[argc-2];
 	const string destFile = argv[argc-1];
 	LLVMContext* ctx = new LLVMContext();
@@ -697,10 +791,10 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	Module* m = ParseBitcodeFile(ptr.get(), *ctx);
-	cout << "Generating into Haxe at " << destFile << "...\n";
+	cout << "Generating into Haxe at " << destFile << " using Clang version "<< __clang_version__ << " and LLVM version " << PACKAGE_VERSION << "\n";
 	string errorInfo = "ERROR";
 	llvm::raw_ostream *out = new llvm::raw_fd_ostream(destFile.c_str(), errorInfo, 0);
-	HaxeWriter *wtr = new HaxeWriter(out, m);
+	HaxeWriter *wtr = new HaxeWriter(out, m, formatClassName(destFile));
 	wtr -> writeAll();
 	return 0;
 }
