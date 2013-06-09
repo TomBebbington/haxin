@@ -84,11 +84,11 @@ string haxeFilter(string n, bool camel = false) {
 string toHaxeName(string n) {
 	if(n.length() >= 6 && n.substr(0, 6) == "class.")
 		n = n.substr(6);
-	n = haxeFilter(n, true);
 	const string slash = "/";
-	const size_t found = n.find_last_of(slash, 0);
+	const size_t found = n.find_last_of(slash);
 	if(found != 0 && found < n.length() && found != string::npos)
 		n = n.substr(found);
+	n = haxeFilter(n, true);
 	const string sep = "::";
 	int last = -1;
 	while(true) {
@@ -205,10 +205,8 @@ int getConstantInt(const ConstantInt* ci) {
 	return ci -> getValue().getLimitedValue();
 }
 void HaxeWriter::writeValue(const Value *v) {
-	if(v -> hasName() && v -> getName().str().length() > 0)
-		haxeFilter(v -> getName().str());
-	else if(const GlobalValue* var = dyn_cast<GlobalValue>(v)) {
-		*output << "value";
+	if(const GlobalValue* var = dyn_cast<GlobalValue>(v)) {
+		*output << haxeFilter(var -> getName().str());
 	} else if(const Constant* c = dyn_cast<Constant>(v)) 
 		writeConstant(c);
 	else if(const BasicBlock* b = dyn_cast<BasicBlock>(v)) {
@@ -374,13 +372,10 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 		writeValue(i -> getCalledValue());
 		*output << "()";
 	} else if(const CallInst *c = dyn_cast<CallInst>(inst)) {
-		const Value* called = c -> getCalledValue();
-		if(called == NULL)
-			called = c -> getCalledFunction();
-		if(called == NULL) {
-			*output << "/* Unrecognised function: " << c << " */";
-		} else
-			writeValue(called);
+		const Value* calledFunc = c -> getCalledFunction();
+		const Value* calledVal = c -> getCalledValue();
+		const Value* called = calledFunc == NULL ? calledVal : calledFunc;
+		writeValue(called);
 		int args = c -> getNumArgOperands();
 		*output << "(";
 		for(int ind = 0;ind < args;ind++) {
@@ -740,6 +735,7 @@ void HaxeWriter::writeGlobals() {
 void HaxeWriter::writeMetadata() {
 	const string id = mod -> getModuleIdentifier();
 	const string target = mod -> getTargetTriple();
+	const string layout = mod -> getDataLayout();
 	if(id.length() > 0) {
 		*output << "@:ident(" << encodeString(id) << ")";
 		newline();
@@ -794,7 +790,7 @@ int main(int argc, char** argv) {
 	cout << "Generating into Haxe at " << destFile << " using Clang version "<< __clang_version__ << " and LLVM version " << PACKAGE_VERSION << "\n";
 	string errorInfo = "ERROR";
 	llvm::raw_ostream *out = new llvm::raw_fd_ostream(destFile.c_str(), errorInfo, 0);
-	HaxeWriter *wtr = new HaxeWriter(out, m, formatClassName(destFile));
+	HaxeWriter *wtr = new HaxeWriter(out, m, formatClassName(destFile.substr(0, destFile.length()-3)));
 	wtr -> writeAll();
 	return 0;
 }
