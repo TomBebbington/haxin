@@ -1,0 +1,10 @@
+{
+	"name" : "haxin",
+	"url" : "https://github.com/tophattedcoder/haxin",
+	"license" : "BSD",
+	"description" : "LLVM to Haxe conversion engine",
+	"version" : "0.0.1",
+	"releasenote" : "Initial release",
+	"contributors" : ["tophattedcoder"],
+	"dependencies" : { "openfl" : "Required for SDL support." }
+}

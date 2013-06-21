@@ -1,0 +1,4 @@
+-neko ../run.n
+-main Tools
+-cmd neko ../run.n setup -o thing -s something-else -then
+-dce full
