@@ -6,7 +6,7 @@ enum OS {
 }
 
 enum Distro {
-	Debian;
+	Debian(is_ubuntu:Bool);
 	RedHat;
 	Other(name:String);
 }
