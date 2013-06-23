@@ -1,16 +1,11 @@
 package haxin;
-
-class PointerS<T> implements haxe.rtti.Generic {
-	public var addr:Int;
-	public var v:T;
-	public function new(d:T) {
-		v = d;
-		addr = 0;
-	}
-}
-abstract Pointer<T>(PointerS<T>) {
-	public inline function new() {
-		this = new PointerS(null);
+import haxe.io.Bytes;
+abstract Pointer<T>(Int) from Int to Int {
+	public static inline var LEAP = Bytes.alloc(256);
+	public static var heap = Bytes.alloc(LEAP);
+	public inline function new(v:T) {
+		this = 0;
+		heap.set(this, v);
 	}
 	public inline function set(v:T) {
 		this.v = v;
@@ -18,13 +13,9 @@ abstract Pointer<T>(PointerS<T>) {
 	@:from static inline function from(v:T):Pointer<T> {
 		return cast new PointerS(v);
 	}
-	@:to public inline function get():Int {
+	@:to public inline function addr():Int {
 		return this.v;
 	}
-	@:to public inline function addr():T {
-		return this.addr;
-	}
 	public inline function free():Void {
-		this.v = null;
 	}
 }

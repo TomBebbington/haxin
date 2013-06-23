@@ -1,0 +1,2 @@
+typedef SDLEvent = SDLUserEvent;
+
