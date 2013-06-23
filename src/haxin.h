@@ -16,7 +16,7 @@ class HaxePath {
 		vector<string>* packs;
 		string name;
 		HaxePath(const string path);
-		friend llvm::raw_ostream & operator << (llvm::raw_ostream & out, HaxePath &);
+		friend raw_ostream & operator << (raw_ostream & out, HaxePath &);
 		string toHaxe();
 		string toPath();
 };
@@ -31,7 +31,7 @@ class HaxeWriter {
 	string name;
 	unsigned int tabs;
 	unsigned int allocWidth;
-	std::map <const Instruction*, string> names;
+	map <const Instruction*, string> names;
 	public:
 		HaxeWriter(raw_ostream*, Module*, string, string);
 		void newline(const int tabp=0);

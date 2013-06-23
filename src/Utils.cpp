@@ -32,7 +32,7 @@ bool endsWith (string const &fullString, string const &ending) {
 }
 string toUpper(string s) {
 	string ns = s;
-	std::transform(ns.begin(), ns.end(), ns.begin(), ::toupper);
+	transform(ns.begin(), ns.end(), ns.begin(), ::toupper);
 	return ns;
 }
 

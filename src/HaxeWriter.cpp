@@ -654,9 +654,9 @@ void HaxeWriter::addStruct(const StructType* s) {
 }
 void HaxeWriter::writeStruct(const StructType* s) {
 	HaxePath name(s -> getName());
-	llvm::raw_ostream *old = output;
+	raw_ostream *old = output;
 	string err = "ERROR";
-	output = new llvm::raw_fd_ostream((dir + name.toPath()).c_str(), err, 0);
+	output = new raw_fd_ostream((dir + name.toPath()).c_str(), err, 0);
 	if(s -> getNumElements() == 1) {
 		*output << "typedef " << name << " = ";
 		writeType(s -> getElementType(0));
