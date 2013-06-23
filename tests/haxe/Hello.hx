@@ -3,7 +3,7 @@ class Hello {
 	static inline var _str:String = String;
 	static function _main(): Int {
 		
-		var str:Int = var a:String = _str;
+		var str:Int = new haxin.Pointer(_str);
 		var call:Int = printf(str);
 		return 1;
 	}

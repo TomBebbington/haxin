@@ -1,9 +1,11 @@
 package haxin;
 
-class PointerS<T> {
+class PointerS<T> implements haxe.rtti.Generic {
+	public var addr:Int;
 	public var v:T;
 	public function new(d:T) {
 		v = d;
+		addr = 0;
 	}
 }
 abstract Pointer<T>(PointerS<T>) {
@@ -16,8 +18,11 @@ abstract Pointer<T>(PointerS<T>) {
 	@:from static inline function from(v:T):Pointer<T> {
 		return cast new PointerS(v);
 	}
-	@:to inline function to():T {
+	@:to public inline function get():Int {
 		return this.v;
+	}
+	@:to public inline function addr():T {
+		return this.addr;
 	}
 	public inline function free():Void {
 		this.v = null;

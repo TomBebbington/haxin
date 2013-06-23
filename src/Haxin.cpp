@@ -277,7 +277,10 @@ void HaxeWriter::writeCast(const Value *v, const Type *t) {
 		*output << ")";
 	} else if(v -> getType() == t)
 		writeValue(v);
-	else {
+	else if(v -> getType() -> isPointerTy() && t -> isIntegerTy()) {
+		writeValue(v);
+		*output << ".addr()";
+	} else {
 		*output << "cast(";
 		writeValue(v);
 		*output << ", ";
@@ -677,7 +680,7 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 		}
 		newline(1);
 		*output << "default:";
-		writeInsts(s -> getDefaultDest());
+		writeInsts(s -> getDefaultDest(), true);
 		newline(-2);
 		*output << "}";
 		newline();
@@ -699,14 +702,9 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 		newline(-1);
 		*output << "}";
 	} else if(const GetElementPtrInst* p = dyn_cast<GetElementPtrInst>(inst)) {
-		if(is_value)
-			*output << genID(p -> getPointerAddressSpace());
-		else {
-			*output << "var " << genID(p -> getPointerAddressSpace()) << ":";
-			writeType(p -> getPointerOperand() -> getType());
-			*output << " = ";
-			writeValue(p -> getPointerOperand());
-		}
+		*output << "new haxin.Pointer(";
+		writeValue(p -> getPointerOperand());
+		*output << ")";
 	} else if(const InsertValueInst* i = dyn_cast<InsertValueInst>(i)) {
 		writeValue(i -> getAggregateOperand());
 		*output << ".push(";
@@ -721,7 +719,7 @@ void HaxeWriter::writeInst(const Instruction* inst, bool is_value){
 void HaxeWriter::writeInsts(const BasicBlock* b, bool is_value) {
 	for(BasicBlock::const_iterator it = b -> begin(); it != b -> end(); it++) {
 		newline();
-		writeInst(it, is_value);
+		writeInst(it, it == b -> end());
 	}
 }
 void HaxeWriter::writeFunctions() {
@@ -849,7 +847,7 @@ void HaxeWriter::writeConstant(const Constant *it) {
 	else if(const BlockAddress *bl = dyn_cast<const BlockAddress>(it)) {
 		*output << "{";
 		newline(1);
-		writeInsts(bl -> getBasicBlock());
+		writeInsts(bl -> getBasicBlock(), true);
 		newline(-1);
 		*output << "}";
 	} else if(const ConstantDataVector *cds = cast<ConstantDataVector>(it)) {
