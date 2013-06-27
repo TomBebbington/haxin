@@ -1,6 +1,7 @@
+package haxin;
 import sys.FileSystem;
 import sys.io.*;
-class Tools {
+class Haxin {
 	public static var args = new Args(Sys.args());
 	public static var os:OS;
 	static function main() {
@@ -22,23 +23,10 @@ class Tools {
 			case ["setup"]: switch(os) {
 				case Linux(Debian(is_ubuntu)):
 					setupLinuxShortcut();
-					var sources = File.getContent("/etc/apt/sources.list");
-					var version = is_ubuntu ? "raring" : File.getContent("/etc/debian_version").split("/")[0];
-					if(sources.indexOf('llvm.org/apt/$version/') == -1) {
-						sources += '\ndeb http://llvm.org/apt/$version/ llvm-toolchain-$version main\ndeb-src http://llvm.org/apt/$version/ llvm-toolchain-$version main';
-						try sys.io.File.saveContent("/etc/apt/sources.list", sources) catch(e:Dynamic) error("Couldn't open sources.list - did you forget to run this as sudo?");
-						if(Sys.command("sudo apt-get update") != 0)
-							error("Could not update repositories!");
-					}
-					Sys.println("Installing dependencies...");
-					switch(Sys.command("sudo apt-get install llvm-3.4 clang-3.4 libclang-common-3.4-dev libclang-3.4-dev libclang1-3.4 libclang1-3.4-dbg libllvm-3.4-ocaml-dev libllvm3.4 libllvm3.4-dbg lldb-3.4 llvm-3.4 llvm-3.4-dev llvm-3.4-doc llvm-3.4-examples llvm-3.4-runtime cpp11-migrate-3.4 clang-format-3.4
-")) {
-						case 0: Sys.println("Dependencies installed.");
-						default: error("Dependency installation failed!");
-					}
 				case all: 
 					Sys.println('Sorry, it looks like your $all system cannot be automatically set up');
 			}
+			case ["build", s]: sys.io.File.saveContent(args.vals.exists("o") ? args.vals.get("o") : StringTools.replace(s, ".bc", ".hx"), new HaxeGen(s).toString());
 			case ["help"]:
 				Sys.println("Haxin LLVM-to-Haxe compiler");
 		}

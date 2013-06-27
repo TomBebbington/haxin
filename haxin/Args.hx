@@ -1,3 +1,4 @@
+package haxin;
 using Lambda;
 class Args {
 	static var REGEX_ARGS(default, null) = ~/-([a-zA-Z0-9-]*) ([^- ][^ ]*)/;

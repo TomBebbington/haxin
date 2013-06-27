@@ -1,0 +1,5 @@
+-main haxin.Haxin
+-neko run.n
+-lib llvm
+-cmd haxelib run haxin build tests/hello.bc -o tests/Hello.hx
+-dce full

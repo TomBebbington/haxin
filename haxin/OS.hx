@@ -1,3 +1,4 @@
+package haxin;
 enum OS {
 	Linux(d:Distro);
 	Windows;
