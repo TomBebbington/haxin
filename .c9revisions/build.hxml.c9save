@@ -1,0 +1,1 @@
+{"ts":1372678314759,"silentsave":true,"restoring":false,"patch":[[{"diffs":[[1,"-main haxin.Haxin\n-neko run.n\n-lib llvm\n-cmd haxelib run haxin build tests/hello.bc -o tests/Hello.hx\n-dce full"]],"start1":0,"start2":0,"length1":0,"length2":111}]],"length":111}

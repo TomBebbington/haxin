@@ -34,43 +34,17 @@ class HaxeGen {
 		ctx = new LLVMContext();
 	}
 	public function toString():String {
-		var f = [for(f in fields) {
-			var b = new StringBuf();
-			b.add("\t");
-			if(f.access != null)
-				for(a in f.access) {
-					b.add((switch(a) {
-						case AStatic: "static";
-						case APublic: "public";
-						case APrivate: "private";
-						case AOverride: "override";
-						case AMacro: "macro";
-						case AInline: "inline";
-						case ADynamic: "dynamic";
-					})+" ");
-				}
-			switch(f.kind) {
-				case FieldType.FVar(t, e):
-					b.add("var ");
-					b.add(f.name);
-					if(t != null)
-						b.add(' ${t.toString()}');
-				case FFun(fn):
-					b.add("function ");
-					b.add(f.name);
-					b.add("(");
-					b.add([for(a in fn.args)
-						a.type == null ? a.name : '${a.name}:${a.type.toString()}'
-					].join(", "));
-					b.add(")");
-					if(fn.ret != null)
-						b.add(':${fn.ret.toString()} ');
-					b.add(fn.expr.toString().replace("\n", "\n\t\t"));
-				case FieldType.FProp(get, set, t, e): b.add("var");
-			}
-			b.toString();
-		}].join("\n");
-		return 'class $name {\n$f\n}';
+        var td:TypeDefinition = {
+            pos: pos,
+            params: [],
+            pack: [],
+            name: name,
+            meta: [],
+            kind: TypeDefKind.TDClass(),
+            isExtern: false,
+            fields: fields
+        };
+        return new Printer.printTypeDeclaration(td);
 	}
 	static function haxeFilter(n:String, camel:Bool=true) {
 		var notAllowed = "./+_-";
@@ -86,7 +60,7 @@ class HaxeGen {
 			}
 		}
 		if(n == "main")
-			n = "_main";
+			n = '_$n';
 		return n;
 	}
 	static function toHaxeName(n:String) {
