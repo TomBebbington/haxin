@@ -8,7 +8,7 @@ class Args {
 	public var args(default, null):Array<String>;
 	public function new(ovals:Array<String>) {
 		if(sys.FileSystem.exists(ovals[ovals.length-1]) && sys.FileSystem.isDirectory(ovals[ovals.length-1]))
-			ovals = ovals.slice(0, ovals.length-1);
+			Sys.setCwd(ovals.pop());
 		var avals = ovals.join(" ");
 		vals = new Map<String, String>();
 		for(arg in matches(avals, REGEX_ARGS, 2))
@@ -33,6 +33,14 @@ class Args {
 			pos = cpos.pos + cpos.len;
 		}
 		return a;
+	}
+	public function toString() {
+		var a = args == null ? [] : args.copy();
+		if(flags != null)
+			a = a.concat([for(f in flags) '-$f']);
+		if(vals != null)
+			a = a.concat([for(v in vals.keys()) '-$v ${vals.get(v)}']);
+		return a.join(" ");
 	}
 	public inline function has(id:String):Bool {
 		return flags.indexOf(id) != -1;

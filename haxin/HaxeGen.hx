@@ -32,11 +32,16 @@ class HaxeGen {
 			access: [APublic, AStatic]
 		});
 		ctx = new LLVMContext();
-		trace(sys.FileSystem.exists(path));
+		trace(ctx);
+		if(!sys.FileSystem.exists(path))
+			Haxin.error('"$path" does not exist');
+		Sys.println('Parsing bitcode file at "$path"');
 		var m = Module.parseBitcodeFile(path, ctx);
-		trace(m.moduleIdentifier);
-		trace(m.dataLayout);
-		trace(m.targetTriple);
+		Sys.println('Parsed module: ${m.toString()}');
+	}
+	public function toHaxeType(t:llvm.ir.Type):ComplexType {
+		t.dump();
+		return macro:Dynamic;
 	}
 	public function toString():String {
         var td:TypeDefinition = {

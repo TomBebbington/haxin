@@ -1,8 +1,12 @@
 package haxin;
-import sys.FileSystem;
+using sys.FileSystem;
+using StringTools;
+using Lambda;
+using sys.io.File;
 import sys.io.*;
 class Haxin {
-	public static var args = new Args(Sys.args());
+	public static var args:Args = new Args(Sys.args());
+	public static var optimisations:Int = 0;
 	public static var os:OS;
 	static function main() {
 		os = switch(Sys.systemName()) {
@@ -19,6 +23,11 @@ class Haxin {
 				OS.Linux(dist);
 			default: null;
 		};
+		optimisations = if(args.flags.has("O1")) 1
+		else if(args.flags.has("O2")) 2
+		else if(args.flags.has("O3")) 3
+		else if(args.flags.has("O4")) 4
+		else 0;
 		switch(args.args) {
 			case ["setup"]: switch(os) {
 				case Linux(_):
@@ -26,12 +35,29 @@ class Haxin {
 				case all: 
 					Sys.println('Sorry, it looks like your $all system cannot be automatically set up');
 			}
-			case ["build", s] | ["cc", s]: sys.io.File.saveContent(args.vals.exists("o") ? args.vals.get("o") : StringTools.replace(s, ".bc", ".hx"), new HaxeGen(s).toString());
-			case ["help"]:
-				Sys.println("Haxin LLVM-to-Haxe compiler");
+			case ["build", s]:
+				var file = args.vals.exists("o") ? args.vals.get("o") : s.replace(".bc", ".hx");
+				file.saveContent(new HaxeGen(s).toString());
+			case ["cc", s]:
+				var file = s.replace(".cpp", ".bc").replace(".c", ".bc");
+				clangTo(file, s.indexOf(".cpp") != -1);
+				file.saveContent(new HaxeGen(file).toString());
+			case ["help"] | _:
+				Sys.println("Haxin, a LLVM bitcode to Haxe compiler");
 		}
 	}
-	static inline function error(msg:String) {
+	static function clangTo(p:String, cpp:Bool) {
+		var cargs = args.args;
+		cargs = cargs.slice(1);
+		var cmd = cpp ? "clang++" : "clang";
+		cmd += " -emit-llvm";
+		cmd += ' -o $p';
+		cmd += ' -O${optimisations}';
+		cmd += " "+cargs.join(" ");
+		Sys.println(cmd);
+		Sys.command(cmd);
+	}
+	public static inline function error(msg:String) {
 		Sys.stderr().writeString(msg + "\n");
 		Sys.exit(9);
 	}

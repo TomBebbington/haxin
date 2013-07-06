@@ -1,4 +1,5 @@
 -main haxin.Haxin
 -neko run.n
 -lib llvm
--cmd haxelib run haxin cc tests/hello.bc -o tests/Hello.hx
+-debug
+#-cmd haxelib run haxin cc tests/hello.bc -o tests/Hello.hx
