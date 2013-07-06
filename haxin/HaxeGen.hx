@@ -32,6 +32,11 @@ class HaxeGen {
 			access: [APublic, AStatic]
 		});
 		ctx = new LLVMContext();
+		trace(sys.FileSystem.exists(path));
+		var m = Module.parseBitcodeFile(path, ctx);
+		trace(m.moduleIdentifier);
+		trace(m.dataLayout);
+		trace(m.targetTriple);
 	}
 	public function toString():String {
         var td:TypeDefinition = {
@@ -44,7 +49,7 @@ class HaxeGen {
             isExtern: false,
             fields: fields
         };
-        return new Printer.printTypeDeclaration(td);
+        return new Printer().printTypeDefinition(td);
 	}
 	static function haxeFilter(n:String, camel:Bool=true) {
 		var notAllowed = "./+_-";

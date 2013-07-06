@@ -21,12 +21,12 @@ class Haxin {
 		};
 		switch(args.args) {
 			case ["setup"]: switch(os) {
-				case Linux(Debian(is_ubuntu)):
+				case Linux(_):
 					setupLinuxShortcut();
 				case all: 
 					Sys.println('Sorry, it looks like your $all system cannot be automatically set up');
 			}
-			case ["build", s]: sys.io.File.saveContent(args.vals.exists("o") ? args.vals.get("o") : StringTools.replace(s, ".bc", ".hx"), new HaxeGen(s).toString());
+			case ["build", s] | ["cc", s]: sys.io.File.saveContent(args.vals.exists("o") ? args.vals.get("o") : StringTools.replace(s, ".bc", ".hx"), new HaxeGen(s).toString());
 			case ["help"]:
 				Sys.println("Haxin LLVM-to-Haxe compiler");
 		}
