@@ -44,8 +44,6 @@ class HaxeGen {
 		Sys.println('Parsing bitcode file at "$path"');
 		var m = Module.parseBitcodeFile(path, ctx);
 		Sys.println('Parsed module: ${m.toString()}');
-		trace(m.moduleIdentifier);
-		trace(m.dataLayout);
 	}
 	public function toHaxeType(t:llvm.ir.Type):ComplexType {
 		t.dump();
