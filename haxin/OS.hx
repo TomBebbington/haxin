@@ -9,5 +9,6 @@ enum OS {
 enum Distro {
 	Debian(is_ubuntu:Bool);
 	RedHat;
+	Arch;
 	Other(name:String);
 }

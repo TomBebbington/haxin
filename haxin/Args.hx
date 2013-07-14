@@ -15,7 +15,7 @@ class Args {
 			vals.set(arg[0], arg[1]);
 		while(REGEX_ARGS.match(avals))
 			avals = REGEX_ARGS.replace(avals, "");
-		flags = matches(avals, REGEX_FLAGS, 1)[0];
+		flags = [for(m in matches(avals, REGEX_FLAGS, 1)) m[0]];
 		while(REGEX_FLAGS.match(avals))
 			avals = REGEX_FLAGS.replace(avals, "");
 		args = [for(v in avals.split(" ")) if(v.length > 0) v];

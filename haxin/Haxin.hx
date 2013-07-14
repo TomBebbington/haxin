@@ -5,8 +5,8 @@ using Lambda;
 using sys.io.File;
 import sys.io.*;
 class Haxin {
-	public static var args:Args = new Args(Sys.args());
-	public static var optimisations:Int = 0;
+	@:keep public static var args:Args = new Args(Sys.args());
+	public static var opts:Int = 0;
 	public static var os:OS;
 	static function main() {
 		os = switch(Sys.systemName()) {
@@ -19,11 +19,12 @@ class Haxin {
 					OS.Distro.Debian(cont.indexOf("ubuntu") != -1 || cont.indexOf("linux mint") != -1);
 				}
 				else if(FileSystem.exists("/etc/redhat-release")) OS.Distro.RedHat;
+				else if(FileSystem.exists("/usr/bin/pacman")) OS.Distro.Arch;
 				else OS.Distro.Other("???");
 				OS.Linux(dist);
 			default: null;
 		};
-		optimisations = if(args.flags.has("O1")) 1
+		opts = if(args.flags.has("O1")) 1
 		else if(args.flags.has("O2")) 2
 		else if(args.flags.has("O3")) 3
 		else if(args.flags.has("O4")) 4
@@ -52,8 +53,8 @@ class Haxin {
 		var cmd = cpp ? "clang++" : "clang";
 		cmd += " -emit-llvm";
 		cmd += ' -o $p';
-		cmd += ' -O${optimisations}';
-		cmd += " "+cargs.join(" ");
+		cmd += ' -O${opts}';
+		cmd += " "+[for(a in cargs) '-c $a'].join(" ");
 		Sys.println(cmd);
 		Sys.command(cmd);
 	}

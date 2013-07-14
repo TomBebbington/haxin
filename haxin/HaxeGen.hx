@@ -8,9 +8,10 @@ using haxe.macro.ComplexTypeTools;
 import llvm.ir.*;
 import llvm.support.*;
 import llvm.*;
+import llvm.support.MemoryBuffer;
 using StringTools;
 class HaxeGen {
-	var ctx:LLVMContext;
+	var ctx:Context;
 	public var fields:Array<Field>;
 	public var name:String;
 	public var path:String;
@@ -31,13 +32,20 @@ class HaxeGen {
 			pos: pos,
 			access: [APublic, AStatic]
 		});
-		ctx = new LLVMContext();
+		ctx = new Context();
 		trace(ctx);
 		if(!sys.FileSystem.exists(path))
 			Haxin.error('"$path" does not exist');
+		var i = sys.io.File.read(path);
+		i.bigEndian = true;
+		if(i.readInt32() != 0x4243c0de)
+			throw "Invalid magic number";
+		i.close();
 		Sys.println('Parsing bitcode file at "$path"');
 		var m = Module.parseBitcodeFile(path, ctx);
 		Sys.println('Parsed module: ${m.toString()}');
+		trace(m.moduleIdentifier);
+		trace(m.dataLayout);
 	}
 	public function toHaxeType(t:llvm.ir.Type):ComplexType {
 		t.dump();
