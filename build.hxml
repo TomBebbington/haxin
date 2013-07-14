@@ -2,4 +2,5 @@
 -neko run.n
 -lib llvm
 -cmd llvm-as tests/hello.ll
+-debug
 -dce no

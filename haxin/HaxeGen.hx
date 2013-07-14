@@ -33,7 +33,6 @@ class HaxeGen {
 			access: [APublic, AStatic]
 		});
 		ctx = new Context();
-		trace(ctx);
 		if(!sys.FileSystem.exists(path))
 			Haxin.error('"$path" does not exist');
 		var i = sys.io.File.read(path);
